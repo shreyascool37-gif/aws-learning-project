@@ -1,0 +1,13 @@
+﻿AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple S3 bucket for learning
+
+Resources:
+  LearningBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "my-learning-bucket-${AWS::AccountId}"
+
+Outputs:
+  BucketName:
+    Description: Name of the created bucket
+    Value: !Ref LearningBucket
