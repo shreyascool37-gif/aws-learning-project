@@ -21,16 +21,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET }}
           aws-region: us-east-1
       
-      - name: Create ECR repository if not exists
+      - name: Create ECR repository
         run: |
-          aws ecr describe-repositories --repository-names nodejs-app-repo || \
-          aws ecr create-repository --repository-name nodejs-app-repo
+          aws ecr create-repository --repository-name nodejs-app-repo || true
       
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
       
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build, tag, and push image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: nodejs-app-repo
@@ -40,7 +39,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
       
-      - name: Deploy to ECS Fargate
+      - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
             --template-file cloudformation/ecr-fargate.yml \
