@@ -21,6 +21,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET }}
           aws-region: us-east-1
       
+      - name: Create ECR repository if not exists
+        run: |
+          aws ecr describe-repositories --repository-names nodejs-app-repo || \
+          aws ecr create-repository --repository-name nodejs-app-repo
+      
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
