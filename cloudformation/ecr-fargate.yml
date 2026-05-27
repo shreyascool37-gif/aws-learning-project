@@ -1,45 +1,14 @@
 ﻿AWSTemplateFormatVersion: '2010-09-09'
-Description: ECR Repository and Fargate infrastructure for Node.js app
+Description: ECS Fargate infrastructure for Node.js app
 
 Resources:
-  # ECR Repository to store Docker image
-  AppRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: nodejs-app-repo
-      ImageScanningConfiguration:
-        ScanOnPush: true
-
   # ECS Cluster
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: nodejs-fargate-cluster
 
-  # Fargate Task Definition
-  TaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: nodejs-app-task
-      RequiresCompatibilities:
-        - FARGATE
-      NetworkMode: awsvpc
-      Cpu: 256
-      Memory: 512
-      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
-      TaskRoleArn: !GetAtt TaskRole.Arn
-      ContainerDefinitions:
-        - Name: nodejs-app
-          Image: !Sub ".dkr.ecr..amazonaws.com/nodejs-app-repo:latest"
-          PortMappings:
-            - ContainerPort: 8080
-          HealthCheck:
-            Command: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
-            Interval: 30
-            Timeout: 5
-            Retries: 3
-
-  # IAM Role for Fargate execution (pulls images)
+  # IAM Role for Fargate execution
   ExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -53,43 +22,25 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 
-  # IAM Role for the container (runtime permissions)
-  TaskRole:
-    Type: AWS::IAM::Role
+  # Task Definition
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: ContainerLogs
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: '*'
-
-  # CloudWatch Log Group
-  LogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/nodejs-app
-      RetentionInDays: 7
+      Family: nodejs-app-task
+      RequiresCompatibilities:
+        - FARGATE
+      NetworkMode: awsvpc
+      Cpu: 256
+      Memory: 512
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: nodejs-app
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/nodejs-app-repo:latest"
+          PortMappings:
+            - ContainerPort: 8080
 
 Outputs:
-  RepositoryUri:
-    Description: ECR Repository URI
-    Value: !GetAtt AppRepository.RepositoryUri
   ClusterName:
-    Description: ECS Cluster Name
     Value: !Ref ECSCluster
   TaskDefinitionArn:
-    Description: Task Definition ARN
     Value: !Ref TaskDefinition
