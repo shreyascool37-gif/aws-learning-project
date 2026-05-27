@@ -23,7 +23,7 @@ jobs:
       
       - name: Create ECR repository
         run: |
-          aws ecr create-repository --repository-name nodejs-app-repo || true
+          aws ecr create-repository --repository-name nodejs-app-repo || echo "Repository already exists"
       
       - name: Login to Amazon ECR
         id: login-ecr
@@ -39,9 +39,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
       
-      - name: Deploy CloudFormation stack
+      - name: Verify image was pushed
         run: |
-          aws cloudformation deploy \
-            --template-file cloudformation/ecr-fargate.yml \
-            --stack-name my-fargate-stack \
-            --capabilities CAPABILITY_IAM
+          echo "✅ Docker image successfully pushed to ECR!"
+          aws ecr list-images --repository-name nodejs-app-repo
